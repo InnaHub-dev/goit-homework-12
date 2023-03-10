@@ -257,8 +257,12 @@ def get_command(words: str) -> Callable:
     raise KeyError("This command doesn't exist")
 
 def get_contacts() -> AddressBook:
-    with open('some_file', 'rb') as fh:
-        contacts = pickle.load(fh)
+    with open('contacts.bin', 'ab+') as fh:
+        fh.seek(0)
+        try:
+            contacts = pickle.load(fh)
+        except EOFError:
+            contacts = AddressBook()
         return contacts      
 
 @decorator_input
@@ -287,7 +291,7 @@ def show(*args: str) -> str:
     return "\n".join([record.show_record() for record in found])
 
 def write_contacts() -> None:
-    with open('some_file', "wb") as fh:
+    with open('contacts.bin', "wb") as fh:
         pickle.dump(contacts, fh)
 
 contacts = get_contacts()
