@@ -20,16 +20,24 @@ class AddressBook(UserDict):
         user = self.data[name]
         return user
  
-    def add_record(self, record):
+    def add_record(self, record) -> str:
         self.data.update({record.name.value:record})
         return 'Done!'
     
-    def delete_record(self, name):
+    def delete_record(self, name) -> str:
         try:
             self.data.pop(name)
             return f"{name} was removed"
         except KeyError:
             return "This user isn't in the Book"
+        
+    def get_contacts(self, file_name):
+        with open(file_name, 'ab+') as fh:
+            fh.seek(0)
+            try:
+                self.data = pickle.load(fh)
+            except EOFError:
+                pass   
         
     def iterator(self, n = 2):
         if len(self.data) > self.index:
@@ -45,6 +53,11 @@ class AddressBook(UserDict):
         except RuntimeError:
             self.index = 0
             return 'the end'
+        
+    
+    def write_contacts(self, file_name) -> None:
+        with open(file_name, "wb") as fh:
+            pickle.dump(self, fh)
             
 
 class Field:
@@ -254,16 +267,7 @@ def get_command(words: str) -> Callable:
                 return func
         except re.error:
             break
-    raise KeyError("This command doesn't exist")
-
-def get_contacts() -> AddressBook:
-    with open('contacts.bin', 'ab+') as fh:
-        fh.seek(0)
-        try:
-            contacts = pickle.load(fh)
-        except EOFError:
-            contacts = AddressBook()
-        return contacts      
+    raise KeyError("This command doesn't exist") 
 
 @decorator_input
 def goodbye() -> str:
@@ -290,11 +294,8 @@ def show(*args: str) -> str:
         return "No matches"
     return "\n".join([record.show_record() for record in found])
 
-def write_contacts() -> None:
-    with open('contacts.bin', "wb") as fh:
-        pickle.dump(contacts, fh)
-
-contacts = get_contacts()
+contacts = AddressBook()
+contacts.get_contacts('contacts.bin')
 
 commands_dict = {('hello','hi', 'hey'):hello,
                  ('add',):add_user,
@@ -321,7 +322,7 @@ def main():
             continue
         print(func(*words[1:])) 
         if func.__name__ == 'goodbye':
-            write_contacts()
+            contacts.write_contacts('contacts.bin')
             break
 
 if __name__ == '__main__':
